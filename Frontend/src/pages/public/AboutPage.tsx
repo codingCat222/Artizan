@@ -36,7 +36,7 @@ export default function AboutPage() {
             <Link to="/contact" className="mt-7 inline-flex rounded-xl bg-forest-800 px-6 py-3 text-sm font-semibold text-white hover:bg-forest-500">Contact the Chapter</Link>
           </div>
           <div className="relative">
-            <img src="/aaon/officers.jpg" alt="Chapter officers" className="h-[28rem] w-full rounded-2xl object-cover object-top" />
+            <img src="/Images/Img6.jpeg" alt="Chapter officers" className="h-[28rem] w-full rounded-2xl object-cover object-top" />
             <div className="absolute bottom-4 left-4 rounded-2xl bg-white/95 px-5 py-3 shadow-card">
               <p className="font-semibold text-forest-800">Comrade Anthony Ayodele</p>
               <p className="text-xs text-forest-700/60">State President</p>
@@ -47,7 +47,7 @@ export default function AboutPage() {
 
       <section className="bg-forest-50 py-20">
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-2">
-          <img src="/aaon/dialogue-square.jpg" alt="Dialogue with stakeholders" className="h-96 w-full rounded-2xl object-cover" />
+          <img src="/Images/Img2.jpeg" alt="Dialogue with stakeholders" className="h-96 w-full rounded-2xl object-cover" />
           <div>
             <Eyebrow>Engagement and Partnerships</Eyebrow>
             <h2 className="mt-4 text-3xl font-bold text-forest-800 sm:text-4xl">Dialogue That Supports Artisans and the State Economy</h2>

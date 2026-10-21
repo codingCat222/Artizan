@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+// NOTE: SQL Server's Prisma connector does not support native `enum` types,
+// so role/status fields below are plain String columns. Allowed values are
+// documented in comments and enforced in app code (src/config/constants.ts).
+
+// ---------------------------------------------------------------------------
+// Core entities
+// ---------------------------------------------------------------------------
+
+model Association {
+  id           String   @id @default(cuid())
+  name         String
+  code         String   @unique
+  category     String
+  members      Int      @default(0)
+  status       String   @default("Active") // Active | Inactive
+  contactEmail String
+  contactPhone String?
+  description  String?  @db.NVarChar(Max)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  staff    StaffUser[]
+  artisans Artisan[]
+
+  @@map("associations")
+}
+
+model StaffUser {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          String // SUPER_ADMIN | ADMIN | ASSOCIATION_HEAD
+  status        String   @default("Active") // Active | Disabled
+  associationId String?
+  association   Association? @relation(fields: [associationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+
+  @@map("staff_users")
+}
+
+model Artisan {
+  id            String      @id @default(cuid())
+  name          String
+  email         String      @unique
+  passwordHash  String?
+  category      String
+  associationId String
+  association   Association @relation(fields: [associationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  town          String
+  area          String
+  phone         String
+  status        String      @default("Pending") // Active | Overdue | Pending | Suspended
+  verification  String      @default("Unverified") // Verified | Unverified
+
+  businessName        String
+  businessDescription  String?  @db.NVarChar(Max)
+  whatsapp             String?
+  businessAddress      String?
+  shopNumber           String?
+  dob                  DateTime?
+  idType               String?
+  idNumber             String?
+
+  avatarInitials     String
+  photo              String?
+  mustChangePassword Boolean  @default(true)
+
+  createdBy  String
+  verifiedBy String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  documents           ArtisanDocument[]
+  refreshTokens        RefreshToken[]
+  activationTokens      ActivationToken[]
+  passwordResetTokens   PasswordResetToken[]
+
+  @@map("artisans")
+}
+
+model ArtisanDocument {
+  id        String   @id @default(cuid())
+  artisanId String
+  artisan   Artisan  @relation(fields: [artisanId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  name      String
+  type      String // Identification | Certificate | Other
+  url       String
+  review    String   @default("Under review") // Approved | Under review
+  uploaded  DateTime @default(now())
+
+  @@map("artisan_documents")
+}
+
+// ---------------------------------------------------------------------------
+// Auth support tables
+// ---------------------------------------------------------------------------
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userType  String // STAFF | ARTISAN
+  staffId   String?
+  staff     StaffUser? @relation(fields: [staffId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  artisanId String?
+  artisan   Artisan?   @relation(fields: [artisanId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  userAgent String?
+  ipAddress String?
+
+  @@map("refresh_tokens")
+}
+
+/// One-time link sent to a newly created artisan to set their password (FRD 5.3).
+model ActivationToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  artisanId String
+  artisan   Artisan   @relation(fields: [artisanId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("activation_tokens")
+}
+
+/// Forgot-password reset link. Works for both staff and artisan accounts.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userType  String // STAFF | ARTISAN
+  staffId   String?
+  staff     StaffUser? @relation(fields: [staffId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  artisanId String?
+  artisan   Artisan?   @relation(fields: [artisanId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("password_reset_tokens")
+}

@@ -234,7 +234,7 @@ export default function HomePage() {
       <section className="bg-forest-50 py-20">
         <div className="mx-auto grid max-w-7xl gap-12 px-6 lg:grid-cols-2">
           <div className="relative overflow-hidden rounded-2xl">
-            <img src="/aaon/community-portrait.jpg" alt="" className="h-full min-h-[420px] w-full object-cover" />
+            <img src="/Images/Img4.jpeg" alt="" className="h-full min-h-[420px] w-full object-cover" />
             <div className="absolute inset-x-4 bottom-4 rounded-2xl bg-white/95 p-5 shadow-card backdrop-blur">
               <h3 className="font-bold text-forest-800">Need to Reach the Chapter?</h3>
               <p className="mt-1 text-sm text-forest-700/80">Enquire about membership, connect a trade group, raise an issue, or discuss a partnership.</p>
