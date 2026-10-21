@@ -65,10 +65,10 @@ export interface Association {
   id: string;
   name: string;
   code: string;
+  category: string; // trade this association represents, e.g. "Tailoring"
   head: string;
   members: number;
   status: "Active" | "Inactive";
-  town: string;
   contactEmail: string;
   contactPhone?: string;
   description?: string;

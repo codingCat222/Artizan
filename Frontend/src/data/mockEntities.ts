@@ -20,11 +20,13 @@ export const categories: Category[] = [
 ];
 
 export const associations: Association[] = [
-  { id: "assoc-1", name: "Abeokuta Chapter", code: "AAON-ABK", head: "Chief Rasheed Olatunji", members: 612, status: "Active", town: "Abeokuta", contactEmail: "abeokuta@aan-ogun.org" },
-  { id: "assoc-2", name: "Sagamu Chapter", code: "AAON-SAG", head: "Alhaja Morenike Aina", members: 384, status: "Active", town: "Sagamu", contactEmail: "sagamu@aan-ogun.org" },
-  { id: "assoc-3", name: "Ijebu-Ode Chapter", code: "AAON-IJB", head: "Mr. Olumide Fagbemi", members: 298, status: "Active", town: "Ijebu-Ode", contactEmail: "ijebuode@aan-ogun.org" },
-  { id: "assoc-4", name: "Ota Chapter", code: "AAON-OTA", head: "Mrs. Blessing Udoh", members: 456, status: "Active", town: "Ota", contactEmail: "ota@aan-ogun.org" },
-  { id: "assoc-5", name: "Ilaro Chapter", code: "AAON-ILR", head: "Mr. Segun Adeyemi", members: 198, status: "Inactive", town: "Ilaro", contactEmail: "ilaro@aan-ogun.org" },
+  { id: "assoc-1", name: "Association of Tailors", code: "AAON-TLR", category: "Tailoring", head: "Chief Rasheed Olatunji", members: 520, status: "Active", contactEmail: "tailors@aan-ogun.org" },
+  { id: "assoc-2", name: "Association of Electricians", code: "AAON-ELC", category: "Electrical", head: "Alhaja Morenike Aina", members: 410, status: "Active", contactEmail: "electricians@aan-ogun.org" },
+  { id: "assoc-3", name: "Association of Plumbers", code: "AAON-PLB", category: "Plumbing", head: "Mr. Olumide Fagbemi", members: 365, status: "Active", contactEmail: "plumbers@aan-ogun.org" },
+  { id: "assoc-4", name: "Association of Carpenters", code: "AAON-CRP", category: "Carpentry", head: "Mrs. Blessing Udoh", members: 330, status: "Active", contactEmail: "carpenters@aan-ogun.org" },
+  { id: "assoc-5", name: "Association of Mechanics", code: "AAON-MCH", category: "Mechanics", head: "Mr. Segun Adeyemi", members: 420, status: "Active", contactEmail: "mechanics@aan-ogun.org" },
+  { id: "assoc-6", name: "Association of Painters", code: "AAON-PNT", category: "Painting", head: "Mr. Ibrahim Salami", members: 160, status: "Active", contactEmail: "painters@aan-ogun.org" },
+  { id: "assoc-7", name: "Association of Welders", code: "AAON-WLD", category: "Welding", head: "Mr. Emeka Obi", members: 143, status: "Inactive", contactEmail: "welders@aan-ogun.org" },
 ];
 
 const names = [
@@ -39,22 +41,23 @@ const statuses: Artisan["status"][] = ["Active", "Active", "Active", "Overdue", 
 
 export const artisans: Artisan[] = names.map((name, i) => {
   const cat = categories[i % categories.length];
-  const assoc = associations[i % associations.length];
+  const assoc = associations.find((a) => a.category === cat.name)!;
+  const town = towns[i % towns.length];
   const initials = name.split(" ").map((p) => p[0]).join("");
   return {
     id: `AON-23${80 - i}`,
     name,
     category: cat.name,
     association: assoc.name,
-    town: assoc.town,
-    area: `${towns[i % towns.length]} Central`,
+    town,
+    area: `${town} Central`,
     phone: `080${(10000000 + i * 137).toString().slice(0, 8)}`,
     email: `${name.toLowerCase().replace(/\s+/g, ".")}@mail.com`,
     status: statuses[i % statuses.length],
     verification: i === 7 ? "Unverified" : "Verified",
     joined: `${i + 1} ${i === 0 ? "day" : "days"} ago`,
     whatsapp: `080${(10000000 + i * 137).toString().slice(0, 8)}`,
-    businessAddress: `${i + 3} Market Road, ${towns[i % towns.length]} Central`,
+    businessAddress: `${i + 3} Market Road, ${town} Central`,
     shopNumber: `Shop ${i + 1}`,
     createdAt: i < 3 ? `2026-10-${String(14 - i).padStart(2, "0")}` : `2026-0${(i % 6) + 1}-12`,
     createdBy: assoc.head,
@@ -68,7 +71,7 @@ export const artisans: Artisan[] = names.map((name, i) => {
     ],
     avatarInitials: initials,
     businessName: `${name.split(" ")[0]}'s ${cat.name} Works`,
-    businessDescription: `Professional ${cat.name.toLowerCase()} services in ${assoc.town}, Ogun State.`,
+    businessDescription: `Professional ${cat.name.toLowerCase()} services in ${town}, Ogun State.`,
   };
 });
 
@@ -107,7 +110,7 @@ export const staffUsers: StaffUser[] = [
     .map((x, i): StaffUser => ({
       id: `u-h${i + 1}`,
       name: x.head,
-      email: `head.${x.town.toLowerCase().replace(/[^a-z]/g, "")}@aan-ogun.org`,
+      email: `head.${x.code.split("-")[1].toLowerCase()}@aan-ogun.org`,
       role: "ASSOCIATION_HEAD",
       association: x.name,
       status: "Active",
@@ -131,7 +134,7 @@ export const notifications: NotificationItem[] = [
   { id: "n1", title: "Payment received", description: "Your October facilitation fee was confirmed.", time: "2h ago", read: false, type: "payment" },
   { id: "n2", title: "Fee due in 5 days", description: "Your November facilitation fee is due on Nov 5.", time: "1d ago", read: false, type: "reminder" },
   { id: "n3", title: "Profile updated", description: "Your business address was updated successfully.", time: "3d ago", read: true, type: "account" },
-  { id: "n4", title: "Welcome to the platform", description: "Your account was activated by Abeokuta Chapter.", time: "1w ago", read: true, type: "system" },
+  { id: "n4", title: "Welcome to the platform", description: "Your account was activated by the Association of Tailors.", time: "1w ago", read: true, type: "system" },
 ];
 
 export const auditLogs: AuditLogEntry[] = [

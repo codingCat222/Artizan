@@ -13,10 +13,10 @@ import { Association } from "../../types/entities";
 import { useStore } from "../../store/AppStore";
 import { useAuth } from "../../store/AuthContext";
 
-const blank = { name: "", code: "", town: "", description: "", contactEmail: "", contactPhone: "" };
+const blank = { name: "", code: "", category: "", description: "", contactEmail: "", contactPhone: "" };
 
 export default function ManageAssociationsPage() {
-  const { associations, artisans, saveAssociation, toggleAssociation } = useStore();
+  const { associations, artisans, categories, saveAssociation, toggleAssociation } = useStore();
   const { session } = useAuth();
   const [editing, setEditing] = useState<Association | "new" | null>(null);
   const [f, setF] = useState(blank);
@@ -26,7 +26,7 @@ export default function ManageAssociationsPage() {
   const set = (k: keyof typeof blank) => (e: React.ChangeEvent<HTMLInputElement>) => setF((s) => ({ ...s, [k]: e.target.value }));
 
   const open = (a: Association | "new") => {
-    setF(a === "new" ? blank : { name: a.name, code: a.code, town: a.town, description: a.description ?? "", contactEmail: a.contactEmail, contactPhone: a.contactPhone ?? "" });
+    setF(a === "new" ? blank : { name: a.name, code: a.code, category: a.category, description: a.description ?? "", contactEmail: a.contactEmail, contactPhone: a.contactPhone ?? "" });
     setErr(""); setEditing(a);
   };
   const submit = (e: React.FormEvent) => {
@@ -41,12 +41,12 @@ export default function ManageAssociationsPage() {
       <PageHeader title="Manage Associations" subtitle={`${associations.length} associations`}
         actions={<Button onClick={() => open("new")}><Plus size={15} /> New Association</Button>} />
       <Card className="p-0">
-        <Table min={820} head={<><Th>Name</Th><Th>Code</Th><Th>Town</Th><Th>Association head</Th><Th>Artisans</Th><Th>Status</Th><Th /></>}>
+        <Table min={820} head={<><Th>Name</Th><Th>Code</Th><Th>Category</Th><Th>Association head</Th><Th>Artisans</Th><Th>Status</Th><Th /></>}>
           {associations.map((a) => (
             <tr key={a.id} className={rowCls}>
               <Td className="font-medium text-forest-900">{a.name}</Td>
               <Td className="text-forest-700/70">{a.code || "—"}</Td>
-              <Td className="text-forest-700/70">{a.town}</Td>
+              <Td className="text-forest-700/70">{a.category}</Td>
               <Td className="text-forest-700/80">{a.head || <span className="text-forest-700/40">Unassigned</span>}</Td>
               <Td className="text-forest-700/80">{artisans.filter((x) => x.association === a.name).length}</Td>
               <Td><Badge status={a.status} /></Td>
@@ -68,8 +68,21 @@ export default function ManageAssociationsPage() {
           {err && <Notice tone="error">{err}</Notice>}
           <Input label="Association name *" value={f.name} onChange={set("name")} required />
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Code / abbreviation" value={f.code} onChange={set("code")} placeholder="AAON-ABK" />
-            <Input label="Town / city" value={f.town} onChange={set("town")} required />
+            <Input label="Code / abbreviation" value={f.code} onChange={set("code")} placeholder="AAON-TLR" />
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium text-forest-900">Category *</span>
+              <select
+                value={f.category}
+                onChange={(e) => setF((s) => ({ ...s, category: e.target.value }))}
+                required
+                className="w-full rounded-lg border border-forest-700/20 bg-white px-3 py-2 text-sm text-forest-900 outline-none focus:border-forest-600"
+              >
+                <option value="">Select category</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
+            </label>
           </div>
           <Input label="Description" value={f.description} onChange={set("description")} />
           <div className="grid grid-cols-2 gap-3">
