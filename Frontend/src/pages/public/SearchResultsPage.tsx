@@ -8,8 +8,8 @@ import { isListed } from "../../lib/billing";
 import { useStore } from "../../store/AppStore";
 
 export default function SearchResultsPage() {
-  const { artisans, categories, associations } = useStore();
-  const towns = Array.from(new Set(associations.map((a) => a.town).filter(Boolean)));
+  const { artisans, categories } = useStore();
+  const towns = Array.from(new Set(artisans.map((a) => a.town).filter(Boolean)));
   const [params, setParams] = useSearchParams();
   const [category, setCategory] = useState(params.get("category") ?? "");
   const [area, setArea] = useState(params.get("area") ?? "");

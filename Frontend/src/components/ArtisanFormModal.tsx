@@ -33,7 +33,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function ArtisanFormModal({ open, onClose, lockedAssociation }: Props) {
-  const { categories, associations, addArtisan } = useStore();
+  const { artisans, categories, associations, addArtisan } = useStore();
   const { session } = useAuth();
   const [f, setF] = useState(empty);
   const [files, setFiles] = useState<string[]>([]);
@@ -43,7 +43,7 @@ export default function ArtisanFormModal({ open, onClose, lockedAssociation }: P
   const set = (k: keyof typeof empty) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setF((s) => ({ ...s, [k]: e.target.value }));
 
-  const towns = Array.from(new Set(associations.map((a) => a.town).filter(Boolean)));
+  const towns = Array.from(new Set(artisans.map((a) => a.town).filter(Boolean)));
 
   const close = () => {
     setF(empty); setFiles([]); setError(""); setCreated(null);

@@ -69,6 +69,7 @@ export interface Association {
   head: string;
   members: number;
   status: "Active" | "Inactive";
+  town?: string;
   contactEmail: string;
   contactPhone?: string;
   description?: string;

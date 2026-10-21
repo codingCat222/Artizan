@@ -63,7 +63,7 @@ export default function ArtisanDetailsPage() {
     setEditing(false);
   };
 
-  const towns = Array.from(new Set(associations.map((a) => a.town).filter(Boolean)));
+  const towns = Array.from(new Set(artisans.map((a) => a.town).filter(Boolean)));
   const masked = artisan.idNumber ? `${"•".repeat(Math.max(artisan.idNumber.length - 3, 0))}${artisan.idNumber.slice(-3)}` : "—";
 
   return (
@@ -170,8 +170,8 @@ export default function ArtisanDetailsPage() {
         message={confirm === "reset"
           ? `${artisan.name} will be asked to choose a new password the next time they sign in.`
           : confirm === "suspend"
-          ? `${artisan.name} will be blocked from signing in and removed from public search. Their records are kept.`
-          : `${artisan.name} will be able to sign in again and, if all other requirements are met, appear in public search.`}
+            ? `${artisan.name} will be blocked from signing in and removed from public search. Their records are kept.`
+            : `${artisan.name} will be able to sign in again and, if all other requirements are met, appear in public search.`}
         confirmLabel={confirm === "suspend" ? "Suspend" : confirm === "reset" ? "Confirm" : "Reactivate"}
         onCancel={() => setConfirm(null)}
         onConfirm={() => {

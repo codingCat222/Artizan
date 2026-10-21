@@ -23,9 +23,9 @@ function Eyebrow({ children, light }: { children: React.ReactNode; light?: boole
 }
 
 export default function HomePage() {
-  const { artisans, categories, associations } = useStore();
+  const { artisans, categories } = useStore();
   const navigate = useNavigate();
-  const towns = Array.from(new Set(associations.map((a) => a.town).filter(Boolean)));
+  const towns = Array.from(new Set(artisans.map((a) => a.town).filter(Boolean)));
   const activeCats = categories.filter((c) => c.status === "Active");
   const listed = artisans.filter(isListed);
   const [category, setCategory] = useState("");
