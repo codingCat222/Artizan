@@ -5,6 +5,7 @@ import Input from "../../components/ui/Input";
 import Notice from "../../components/ui/Notice";
 import PageHeader from "../../components/ui/PageHeader";
 import { passwordProblem } from "../../lib/format";
+import { authApi } from "../../services/auth";
 import { useStore } from "../../store/AppStore";
 import { useMe } from "../../store/useMe";
 
@@ -16,14 +17,25 @@ export default function AccountSettingsPage() {
   const [pw2, setPw2] = useState("");
   const [msg, setMsg] = useState<{ tone: "success" | "error"; text: string } | null>(null);
 
-  const submit = (e: React.FormEvent) => {
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMsg(null);
     const p = passwordProblem(pw);
     if (p) return setMsg({ tone: "error", text: p });
     if (pw !== pw2) return setMsg({ tone: "error", text: "New passwords do not match." });
-    log(me.name, "Changed password", me.id);
-    setCur(""); setPw(""); setPw2("");
-    setMsg({ tone: "success", text: "Password changed." });
+    setSaving(true);
+    try {
+      await authApi.changePassword(cur, pw);
+      log(me.name, "Changed password", me.id);
+      setCur(""); setPw(""); setPw2("");
+      setMsg({ tone: "success", text: "Password changed." });
+    } catch (err) {
+      setMsg({ tone: "error", text: err instanceof Error ? err.message : "Something went wrong. Please try again." });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -46,7 +58,7 @@ export default function AccountSettingsPage() {
             <Input label="New password" type="password" value={pw} onChange={(e) => setPw(e.target.value)} required />
             <Input label="Confirm new password" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} required />
           </div>
-          <div className="flex justify-end"><Button type="submit">Update password</Button></div>
+          <div className="flex justify-end"><Button type="submit" disabled={saving}>{saving ? "Saving..." : "Update password"}</Button></div>
         </Card>
       </form>
     </div>

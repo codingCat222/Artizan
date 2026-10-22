@@ -23,12 +23,13 @@ router.post(
     validate(forgotPasswordSchema),
     authController.forgotPassword
 );
-router.post("/reset-password", validate(resetPasswordSchema), authController.resetPassword);
-router.post("/activate", validate(activateAccountSchema), authController.activateAccount);
+router.post("/reset-password", authRateLimit, validate(resetPasswordSchema), authController.resetPassword);
+router.post("/activate", authRateLimit, validate(activateAccountSchema), authController.activateAccount);
 
 router.post(
     "/change-password",
     authenticate,
+    authRateLimit,
     validate(changePasswordSchema),
     authController.changePassword
 );

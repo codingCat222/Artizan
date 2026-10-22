@@ -4,26 +4,23 @@ import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import Logo from "../components/Logo";
 import { NavItem, roleLabels } from "../router/navConfig";
 import { homeFor, useAuth } from "../store/AuthContext";
-import { useStore } from "../store/AppStore";
 import { Role } from "../types/entities";
 
 export default function PortalLayout({ nav, allow }: { nav: NavItem[]; allow: Exclude<Role, "PUBLIC">[] }) {
-  const { session, logout } = useAuth();
-  const { artisans } = useStore();
+  const { session, loading, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  // Server-side checks are still required; this only keeps the UI honest.
+  // Wait for the session to be restored from the refresh cookie before deciding.
+  if (loading)
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F3F8F5] text-sm text-forest-700/70">Loading...</div>
+    );
+
+  // The API enforces roles server-side; this only keeps the UI honest.
   if (!session) return <Navigate to="/login" replace />;
   if (!allow.includes(session.role)) return <Navigate to={homeFor(session.role)} replace />;
-  if (session.role === "ARTISAN") {
-    const me = artisans.find((a) => a.id === session.artisanId);
-    if (!me) {
-      logout();
-      return <Navigate to="/login" replace />;
-    }
-    if (me.mustChangePassword) return <Navigate to="/change-password" replace />;
-  }
+  if (session.mustChangePassword) return <Navigate to="/change-password" replace />;
 
   const links = (
     <nav className="flex-1 space-y-1 px-3 py-4">
@@ -34,8 +31,7 @@ export default function PortalLayout({ nav, allow }: { nav: NavItem[]; allow: Ex
           end={["/artisan", "/admin", "/association", "/super-admin"].includes(to)}
           onClick={() => setOpen(false)}
           className={({ isActive }) =>
-            `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-              isActive ? "bg-forest-700 text-white shadow-sm" : "text-forest-700/70 hover:bg-forest-50 hover:text-forest-900"
+            `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${isActive ? "bg-forest-700 text-white shadow-sm" : "text-forest-700/70 hover:bg-forest-50 hover:text-forest-900"
             }`
           }
         >
@@ -63,7 +59,7 @@ export default function PortalLayout({ nav, allow }: { nav: NavItem[]; allow: Ex
         {session.association && session.role === "ASSOCIATION_HEAD" && <div className="mt-0.5">{session.association}</div>}
       </div>
       <button
-        onClick={() => { logout(); navigate("/"); }}
+        onClick={async () => { await logout(); navigate("/"); }}
         className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-forest-700/70 hover:bg-forest-50"
       >
         <LogOut size={14} /> Log out

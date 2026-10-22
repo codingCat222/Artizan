@@ -5,34 +5,67 @@ import Input from "../../components/ui/Input";
 import Notice from "../../components/ui/Notice";
 import PageHeader from "../../components/ui/PageHeader";
 import Select from "../../components/ui/Select";
+import { errorMessage, useApi } from "../../lib/useApi";
+import { settingsApi } from "../../services/settings";
 import { useStore } from "../../store/AppStore";
 import { useAuth } from "../../store/AuthContext";
+import { Settings } from "../../types/entities";
 
 export default function PlatformSettingsPage() {
-  const { settings, saveSettings, runBillingJob } = useStore();
+  const q = useApi(settingsApi.get);
+  if (q.loading && !q.data) return <p className="text-sm text-forest-700/70">Loading settings...</p>;
+  if (!q.data)
+    return (
+      <div className="space-y-4">
+        <Notice tone="error">{q.error || "Couldn't load settings."}</Notice>
+        <Button variant="secondary" onClick={q.reload}>Retry</Button>
+      </div>
+    );
+  return <SettingsForm initial={q.data} />;
+}
+
+function SettingsForm({ initial }: { initial: Settings }) {
+  // The mock store still powers the demo dashboards, so keep its copy in step with what was saved.
+  const { saveSettings: syncStore, runBillingJob } = useStore();
   const { session } = useAuth();
+  const [saved, setSaved] = useState(initial);
   const [f, setF] = useState({
-    fee: String(settings.fee), dueDay: String(settings.dueDay), graceDays: String(settings.graceDays),
-    reminderDays: settings.reminderDays, supportEmail: settings.supportEmail,
+    fee: String(initial.fee), dueDay: String(initial.dueDay), graceDays: String(initial.graceDays),
+    reminderDays: initial.reminderDays, supportEmail: initial.supportEmail,
   });
-  const [adminsCanCreate, setAdminsCanCreate] = useState(settings.adminsCanCreateStaff);
-  const [basis, setBasis] = useState(settings.revenueBasis);
-  const [gateway, setGateway] = useState(settings.gateway);
-  const [emailProvider, setEmailProvider] = useState(settings.emailProvider);
+  const [adminsCanCreate, setAdminsCanCreate] = useState(initial.adminsCanCreateStaff);
+  const [basis, setBasis] = useState(initial.revenueBasis);
+  const [gateway, setGateway] = useState(initial.gateway);
+  const [emailProvider, setEmailProvider] = useState(initial.emailProvider);
+  const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ tone: "success" | "error" | "info"; text: string } | null>(null);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF((s) => ({ ...s, [k]: e.target.value }));
   const actor = session?.name ?? "Super Admin";
 
-  const save = (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMsg(null);
     const fee = Number(f.fee), due = Number(f.dueDay), grace = Number(f.graceDays);
-    if (!(fee > 0)) return setMsg({ tone: "error", text: "Monthly fee must be greater than zero." });
+    if (!(fee > 0) || !Number.isInteger(fee)) return setMsg({ tone: "error", text: "Monthly fee must be a whole number greater than zero." });
     if (!(due >= 1 && due <= 28)) return setMsg({ tone: "error", text: "Due day must be between 1 and 28." });
     if (!(grace >= 0 && grace <= 60)) return setMsg({ tone: "error", text: "Grace period must be between 0 and 60 days." });
     if (!/^\s*\d+(\s*,\s*\d+)*\s*$/.test(f.reminderDays)) return setMsg({ tone: "error", text: "Reminders must be comma-separated day counts, e.g. 7, 3, 1." });
-    saveSettings({ ...settings, fee, dueDay: due, graceDays: grace, reminderDays: f.reminderDays, supportEmail: f.supportEmail,
-      adminsCanCreateStaff: adminsCanCreate, revenueBasis: basis, gateway, emailProvider }, actor);
-    setMsg({ tone: "success", text: "Settings saved. Changes apply to future billing periods and are recorded in the audit log." });
+
+    setSaving(true);
+    try {
+      const next = await settingsApi.update({
+        ...saved, fee, dueDay: due, graceDays: grace, reminderDays: f.reminderDays, supportEmail: f.supportEmail,
+        adminsCanCreateStaff: adminsCanCreate, revenueBasis: basis, gateway, emailProvider,
+      });
+      setSaved(next);
+      setF((s) => ({ ...s, reminderDays: next.reminderDays }));
+      syncStore(next, actor);
+      setMsg({ tone: "success", text: "Settings saved. Changes apply to future billing periods and are recorded in the audit log." });
+    } catch (err) {
+      setMsg({ tone: "error", text: errorMessage(err) });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -75,13 +108,14 @@ export default function PlatformSettingsPage() {
           </div>
           <p className="mt-3 text-xs text-forest-700/60">Gateway secrets are never stored in the browser; they're configured on the server. SMS is out of scope for this release.</p>
         </Card>
-        <div className="flex justify-end"><Button type="submit">Save settings</Button></div>
+        <div className="flex justify-end"><Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save settings"}</Button></div>
       </form>
 
       <Card>
         <h3 className="font-semibold text-forest-900">Run billing check (demo)</h3>
         <p className="mt-1 text-sm text-forest-700/70">
           In production this runs automatically each day: it sends reminders and hides artisans who are still unpaid after the grace period.
+          This demo button still runs against sample data until the billing module is built.
         </p>
         <Button variant="secondary" className="mt-4" onClick={() => {
           const r = runBillingJob(actor);

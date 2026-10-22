@@ -4,10 +4,10 @@ import { prisma } from "./config/prisma";
 
 async function main() {
     await prisma.$connect();
-    console.log("✅ Connected to database");
+    console.log(" Connected to database");
 
     app.listen(env.port, () => {
-        console.log(`🚀 Server running on http://localhost:${env.port} (${env.nodeEnv})`);
+        console.log(` Server running on http://localhost:${env.port} (${env.nodeEnv})`);
     });
 }
 

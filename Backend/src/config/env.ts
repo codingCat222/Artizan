@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { parseDurationMs } from "../utils/duration";
 
 function required(name: string, fallback?: string): string {
     const value = process.env[name] ?? fallback;
@@ -21,10 +22,13 @@ export const env = {
         refreshSecret: required("JWT_REFRESH_SECRET"),
         accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? "15m",
         refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
+        refreshExpiresInMs: parseDurationMs(process.env.JWT_REFRESH_EXPIRES_IN ?? "7d"),
     },
 
     resend: {
-        apiKey: process.env.RESEND_API_KEY ?? "",
+        // Treat the placeholder from .env.example as "not configured" so emails
+        // are logged to the console in development instead of failing to send.
+        apiKey: /^re_your_api_key/.test(process.env.RESEND_API_KEY ?? "") ? "" : process.env.RESEND_API_KEY ?? "",
         emailFrom: process.env.EMAIL_FROM ?? "FindArtisansNigeria <no-reply@findartisansnigeria.com>",
     },
 

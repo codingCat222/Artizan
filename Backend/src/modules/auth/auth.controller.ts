@@ -9,7 +9,7 @@ const REFRESH_COOKIE_OPTIONS = {
     secure: env.isProduction,
     sameSite: env.isProduction ? ("none" as const) : ("lax" as const),
     path: "/api/auth",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxAge: env.jwt.refreshExpiresInMs,
 };
 
 function setRefreshCookie(res: Response, token: string) {

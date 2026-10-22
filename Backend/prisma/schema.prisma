@@ -155,3 +155,38 @@ model PasswordResetToken {
 
   @@map("password_reset_tokens")
 }
+
+// ---------------------------------------------------------------------------
+// Platform administration
+// ---------------------------------------------------------------------------
+
+/// Append-only record of significant administrative and financial actions.
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actorName String
+  action    String
+  target    String   @db.NVarChar(500)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+/// Single-row table (id = "singleton") holding platform-wide policies.
+model PlatformSettings {
+  id                   String   @id @default("singleton")
+  fee                  Int      @default(200)
+  dueDay               Int      @default(5)
+  graceDays            Int      @default(7)
+  reminderDays         String   @default("7, 3, 1")
+  adminsCanCreateStaff Boolean  @default(false)
+  revenueBasis         String   @default("gross") // gross | net
+  gateway              String   @default("Not yet selected")
+  emailProvider        String   @default("Not yet selected")
+  supportEmail         String   @default("support@aan-ogun.org")
+  updatedBy            String?
+  updatedAt            DateTime @updatedAt
+
+  @@map("platform_settings")
+}

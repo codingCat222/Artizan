@@ -29,9 +29,14 @@ interface SessionResult {
         initials: string;
         artisanId?: string;
         association?: string;
+        mustChangePassword?: boolean;
     };
     redirect: string;
 }
+
+// Pre-computed bcrypt hash used to burn the same CPU time when an account does
+// not exist, so response time doesn't reveal which emails are registered.
+const DUMMY_HASH = "$2a$12$8Lk0f1k/Yzrb2Xv760imgOZyDbXmxx9VKiWsnjLiLNeqpJLXQ6UPy";
 
 const homeFor = (role: Role): string =>
 ({
@@ -57,7 +62,7 @@ async function issueTokens(params: {
     const jti = generateOpaqueToken().token;
     const refreshToken = signRefreshToken({ sub: userId, userType, jti });
 
-    const expiresAt = addHours(new Date(), 24 * 7); // matches default 7d refresh expiry
+    const expiresAt = new Date(Date.now() + env.jwt.refreshExpiresInMs);
     await prisma.refreshToken.create({
         data: {
             tokenHash: hashOpaqueToken(jti),
@@ -87,11 +92,11 @@ export async function login(
     });
 
     if (staff) {
+        const valid = await comparePassword(password, staff.passwordHash);
+        if (!valid) throw invalidCreds();
         if (staff.status === "Disabled") {
             throw AppError.forbidden("This account has been disabled. Contact the super administrator.");
         }
-        const valid = await comparePassword(password, staff.passwordHash);
-        if (!valid) throw invalidCreds();
 
         const { accessToken, refreshToken } = await issueTokens({
             userId: staff.id,
@@ -126,13 +131,13 @@ export async function login(
                 "This account has not been activated yet. Please use the activation link sent to your email."
             );
         }
-        if (artisan.status === "Suspended") {
-            throw AppError.forbidden("This account has been suspended. Please contact your association.");
-        }
         if (!artisan.passwordHash) throw invalidCreds();
 
         const valid = await comparePassword(password, artisan.passwordHash);
         if (!valid) throw invalidCreds();
+        if (artisan.status === "Suspended") {
+            throw AppError.forbidden("This account has been suspended. Please contact your association.");
+        }
 
         const { accessToken, refreshToken } = await issueTokens({
             userId: artisan.id,
@@ -152,11 +157,13 @@ export async function login(
                 initials: artisan.avatarInitials,
                 artisanId: artisan.id,
                 association: artisan.association?.name,
+                mustChangePassword: artisan.mustChangePassword,
             },
             redirect: artisan.mustChangePassword ? "/change-password" : "/artisan",
         };
     }
 
+    await comparePassword(password, DUMMY_HASH);
     throw invalidCreds();
 }
 
@@ -363,5 +370,6 @@ export async function getMe(userId: string, userType: "STAFF" | "ARTISAN") {
         initials: artisan.avatarInitials,
         artisanId: artisan.id,
         association: artisan.association?.name,
+        mustChangePassword: artisan.mustChangePassword,
     };
 }
