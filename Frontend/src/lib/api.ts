@@ -89,3 +89,23 @@ export async function api<T = unknown>(path: string, options: Options = {}): Pro
   }
   return parse<T>(res);
 }
+
+/** Downloads a file from an authenticated endpoint (e.g. a CSV export) and saves it in the browser. */
+export async function apiDownload(path: string, filename: string): Promise<void> {
+  let res = await rawRequest(path, {});
+  if (res.status === 401) {
+    const fresh = await refreshAccessToken();
+    if (fresh) res = await rawRequest(path, {});
+    else onAuthFailure?.();
+  }
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new ApiError((data && (data.error as string)) || "Download failed. Please try again.", res.status);
+  }
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}

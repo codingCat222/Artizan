@@ -6,6 +6,7 @@ import Notice from "../../components/ui/Notice";
 import PageHeader from "../../components/ui/PageHeader";
 import Select from "../../components/ui/Select";
 import { errorMessage, useApi } from "../../lib/useApi";
+import { billingApi } from "../../services/billing";
 import { settingsApi } from "../../services/settings";
 import { useStore } from "../../store/AppStore";
 import { useAuth } from "../../store/AuthContext";
@@ -26,7 +27,8 @@ export default function PlatformSettingsPage() {
 
 function SettingsForm({ initial }: { initial: Settings }) {
   // The mock store still powers the demo dashboards, so keep its copy in step with what was saved.
-  const { saveSettings: syncStore, runBillingJob } = useStore();
+  const { saveSettings: syncStore } = useStore();
+  const [running, setRunning] = useState(false);
   const { session } = useAuth();
   const [saved, setSaved] = useState(initial);
   const [f, setF] = useState({
@@ -112,15 +114,22 @@ function SettingsForm({ initial }: { initial: Settings }) {
       </form>
 
       <Card>
-        <h3 className="font-semibold text-forest-900">Run billing check (demo)</h3>
+        <h3 className="font-semibold text-forest-900">Billing check</h3>
         <p className="mt-1 text-sm text-forest-700/70">
-          In production this runs automatically each day: it sends reminders and hides artisans who are still unpaid after the grace period.
-          This demo button still runs against sample data until the billing module is built.
+          This runs automatically every morning at 06:00 (Lagos time). It creates this month's invoices, emails reminders on the
+          reminder days, and hides artisans who are still unpaid once the grace period ends. You can also run it now.
         </p>
-        <Button variant="secondary" className="mt-4" onClick={() => {
-          const r = runBillingJob(actor);
-          setMsg({ tone: "info", text: `Billing check complete: ${r.hidden} listing(s) hidden, ${r.reminders} reminder(s) due today.` });
-        }}>Run now</Button>
+        <Button variant="secondary" className="mt-4" disabled={running} onClick={async () => {
+          setRunning(true);
+          try {
+            const r = await billingApi.run();
+            setMsg({ tone: "info", text: `Billing check complete: ${r.invoices} invoice(s) issued, ${r.hidden} listing(s) hidden, ${r.reminders} reminder(s) sent.` });
+          } catch (err) {
+            setMsg({ tone: "error", text: errorMessage(err) });
+          } finally {
+            setRunning(false);
+          }
+        }}>{running ? "Running..." : "Run now"}</Button>
       </Card>
     </div>
   );

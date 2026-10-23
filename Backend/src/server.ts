@@ -1,13 +1,16 @@
 import app from "./app";
 import { env } from "./config/env";
 import { prisma } from "./config/prisma";
+import { startJobs } from "./jobs";
 
 async function main() {
     await prisma.$connect();
-    console.log(" Connected to database");
+    console.log("Connected to database");
+
+    startJobs();
 
     app.listen(env.port, () => {
-        console.log(` Server running on http://localhost:${env.port} (${env.nodeEnv})`);
+        console.log(`Server running on http://localhost:${env.port} (${env.nodeEnv})`);
     });
 }
 

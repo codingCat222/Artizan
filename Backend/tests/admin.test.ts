@@ -10,6 +10,8 @@ const db = vi.hoisted(() => {
         passwordResetToken: { create: m(), deleteMany: m() },
         refreshToken: { updateMany: m(), deleteMany: m() },
         auditLog: { create: m() },
+        payment: { aggregate: m(), groupBy: m() },
+        category: { count: m() },
         platformSettings: { upsert: m(), update: m() },
         $transaction: m(),
     };
@@ -304,6 +306,9 @@ describe("dashboard summary", () => {
             { id: "as1", name: "Tailors", status: "Active" },
             { id: "as2", name: "Plumbers", status: "Inactive" },
         ]);
+        db.prisma.payment.aggregate.mockResolvedValue({ _sum: { amount: 600 } });
+        db.prisma.payment.groupBy.mockResolvedValue([{ status: "Failed", _count: { _all: 2 } }]);
+        db.prisma.category.count.mockResolvedValue(7);
         db.prisma.artisan.findMany.mockResolvedValue([
             { id: "abcdefghijkl", name: "Ada", category: "Tailoring", status: "Active", createdAt: new Date("2026-10-01"), association: { name: "Tailors" } },
         ]);
@@ -315,6 +320,8 @@ describe("dashboard summary", () => {
         expect(s.byAssociation[1]).toMatchObject({ name: "Plumbers", artisans: 0 });
         expect(s.byCategory[0]).toEqual({ name: "Plumbing", value: 4 }); // sorted by size
         expect(s.recent[0].ref).toBe("AON-GHIJKL");
+        expect(s.payments).toMatchObject({ collected: 600, collectedAll: 600, failedCount: 2, pendingCount: 0 });
+        expect(s.categories.active).toBe(7);
     });
 
     it("is restricted to admins", async () => {

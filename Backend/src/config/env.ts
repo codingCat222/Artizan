@@ -32,6 +32,14 @@ export const env = {
         emailFrom: process.env.EMAIL_FROM ?? "FindArtisansNigeria <no-reply@findartisansnigeria.com>",
     },
 
+    paystack: {
+        // Leave empty in development to use the built-in test gateway (see services/gateway).
+        secretKey: /^sk_(test|live)_your/.test(process.env.PAYSTACK_SECRET_KEY ?? "") ? "" : process.env.PAYSTACK_SECRET_KEY ?? "",
+    },
+
+    // Set JOBS_ENABLED=false to stop the scheduled billing check (e.g. on a second server instance).
+    jobsEnabled: process.env.JOBS_ENABLED !== "false",
+
     tokens: {
         activationExpiresInHours: Number(process.env.ACTIVATION_TOKEN_EXPIRES_IN_HOURS ?? 48),
         resetExpiresInHours: Number(process.env.RESET_TOKEN_EXPIRES_IN_HOURS ?? 1),

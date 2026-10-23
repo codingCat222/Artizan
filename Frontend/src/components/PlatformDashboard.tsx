@@ -28,14 +28,13 @@ export default function PlatformDashboard({ title, subtitle, base }: { title: st
     );
   }
 
-  const { artisans: a, associations, byAssociation, byCategory, recent } = data;
+  const { artisans: a, associations, byAssociation, byCategory, recent, payments, categories } = data;
 
-  // Payments aren't stored yet, so money figures stay at zero until the payments module is built.
   const cards = [
     { id: "a", label: "Total Artisans", value: String(a.total), icon: "users", hint: `${a.active} active · ${a.inactive} inactive` },
-    { id: "b", label: "Associations", value: String(associations.active), icon: "building", hint: `${associations.total} in total` },
-    { id: "c", label: "Collected", value: naira(0), icon: "banknote", hint: "Payments not connected yet" },
-    { id: "d", label: "Overdue / Hidden", value: String(a.overdue), icon: "alert-triangle", hint: `${a.pending} awaiting activation` },
+    { id: "b", label: "Associations", value: String(associations.active), icon: "building", hint: `${categories.active} active categories` },
+    { id: "c", label: `Collected (${payments.period})`, value: naira(payments.collected), icon: "banknote", hint: `${naira(payments.collectedAll)} all time` },
+    { id: "d", label: "Overdue / Hidden", value: String(a.overdue), icon: "alert-triangle", hint: `${payments.pendingCount} pending · ${payments.failedCount} failed transactions` },
   ];
 
   const slices = byCategory.map((c, i) => ({ name: c.name, value: c.value, color: colors[i % colors.length] }));

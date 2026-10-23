@@ -14,6 +14,7 @@ import SearchResultsPage from "./pages/public/SearchResultsPage";
 
 import AccountSettingsPage from "./pages/artisan/AccountSettingsPage";
 import ArtisanDashboardPage from "./pages/artisan/ArtisanDashboardPage";
+import MockCheckoutPage from "./pages/artisan/MockCheckoutPage";
 import MyDocumentsPage from "./pages/artisan/MyDocumentsPage";
 import MyPaymentsPage from "./pages/artisan/MyPaymentsPage";
 import MyProfilePage from "./pages/artisan/MyProfilePage";
@@ -76,6 +77,7 @@ export default function App() {
         <Route path="/artisan/profile" element={<MyProfilePage />} />
         <Route path="/artisan/documents" element={<MyDocumentsPage />} />
         <Route path="/artisan/payments" element={<MyPaymentsPage />} />
+        <Route path="/artisan/pay/mock" element={<MockCheckoutPage />} />
         <Route path="/artisan/settings" element={<AccountSettingsPage />} />
       </Route>
 

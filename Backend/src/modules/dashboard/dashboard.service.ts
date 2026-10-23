@@ -1,4 +1,5 @@
 import { prisma } from "../../config/prisma";
+import { periodFor } from "../../utils/dates";
 
 type StatusCounts = { Active: number; Overdue: number; Pending: number; Suspended: number };
 
@@ -6,7 +7,8 @@ const emptyCounts = (): StatusCounts => ({ Active: 0, Overdue: 0, Pending: 0, Su
 
 /** Platform-wide numbers for the admin / super admin dashboard, straight from the database. */
 export async function getPlatformSummary() {
-    const [byStatus, byCategory, byAssocStatus, associations, recent] = await Promise.all([
+    const period = periodFor(new Date(), { dueDay: 1, graceDays: 0 }).label; // Lagos month, same as billing
+    const [byStatus, byCategory, byAssocStatus, associations, recent, paidAll, paidNow, byPayStatus, activeCategories] = await Promise.all([
         prisma.artisan.groupBy({ by: ["status"], _count: { _all: true } }),
         prisma.artisan.groupBy({ by: ["category"], _count: { _all: true } }),
         prisma.artisan.groupBy({ by: ["associationId", "status"], _count: { _all: true } }),
@@ -23,7 +25,12 @@ export async function getPlatformSummary() {
                 association: { select: { name: true } },
             },
         }),
+        prisma.payment.aggregate({ where: { status: "Paid" }, _sum: { amount: true } }),
+        prisma.payment.aggregate({ where: { status: "Paid", period }, _sum: { amount: true } }),
+        prisma.payment.groupBy({ by: ["status"], _count: { _all: true } }),
+        prisma.category.count({ where: { status: "Active" } }),
     ]);
+    const txCount = (s: string) => byPayStatus.find((x) => x.status === s)?._count._all ?? 0;
 
     const totals = emptyCounts();
     for (const row of byStatus) {
@@ -50,6 +57,14 @@ export async function getPlatformSummary() {
         associations: {
             total: associations.length,
             active: associations.filter((a) => a.status === "Active").length,
+        },
+        categories: { active: activeCategories },
+        payments: {
+            period,
+            collected: paidNow._sum.amount ?? 0,
+            collectedAll: paidAll._sum.amount ?? 0,
+            pendingCount: txCount("Pending"),
+            failedCount: txCount("Failed"),
         },
         byAssociation: associations.map((a) => {
             const c = perAssociation.get(a.id) ?? emptyCounts();

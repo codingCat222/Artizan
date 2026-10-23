@@ -89,6 +89,7 @@ model Artisan {
   refreshTokens        RefreshToken[]
   activationTokens      ActivationToken[]
   passwordResetTokens   PasswordResetToken[]
+  payments              Payment[]
 
   @@map("artisans")
 }
@@ -189,4 +190,37 @@ model PlatformSettings {
   updatedAt            DateTime @updatedAt
 
   @@map("platform_settings")
+}
+
+// ---------------------------------------------------------------------------
+// Catalogue & billing
+// ---------------------------------------------------------------------------
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?  @db.NVarChar(Max)
+  status      String   @default("Active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("categories")
+}
+
+model Payment {
+  id         String    @id @default(cuid())
+  artisanId  String
+  artisan    Artisan   @relation(fields: [artisanId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  amount     Int
+  gatewayFee Int       @default(0)
+  period     String
+  status     String    @default("Pending")
+  reference  String    @unique
+  paidAt     DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([artisanId])
+  @@index([period])
+  @@map("payments")
 }

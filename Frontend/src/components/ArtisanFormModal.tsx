@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { errorMessage, useApi } from "../lib/useApi";
 import { isValidPhone } from "../lib/format";
-import { Artisan } from "../types/entities";
-import { NewArtisanInput, useStore } from "../store/AppStore";
-import { useAuth } from "../store/AuthContext";
+import { ArtisanDto, artisansApi } from "../services/artisans";
+import { associationsApi } from "../services/associations";
+import { categoriesApi } from "../services/categories";
 import Button from "./ui/Button";
 import Input from "./ui/Input";
 import Modal from "./ui/Modal";
@@ -13,15 +13,19 @@ import Select from "./ui/Select";
 interface Props {
   open: boolean;
   onClose: () => void;
-  /** Association heads: association is inherited and locked (FRD BR-005). */
+  /** Association heads: association is inherited and locked (FRD BR-005). Shows the name; the server enforces it. */
   lockedAssociation?: string;
+  /** Called after an artisan is registered so the list can refresh. */
+  onCreated?: () => void;
 }
 
 const empty = {
   name: "", dob: "", phone: "", whatsapp: "", email: "", businessName: "", shopNumber: "",
-  businessAddress: "", businessDescription: "", town: "", area: "", category: "", association: "",
+  businessAddress: "", businessDescription: "", town: "", area: "", category: "", associationId: "",
   idType: "", idNumber: "",
 };
+
+const ID_TYPES = ["National ID (NIN)", "Voter's card", "Driver's licence", "International passport"];
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -32,38 +36,42 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export default function ArtisanFormModal({ open, onClose, lockedAssociation }: Props) {
-  const { artisans, categories, associations, addArtisan } = useStore();
-  const { session } = useAuth();
+export default function ArtisanFormModal({ open, onClose, lockedAssociation, onCreated }: Props) {
+  const categories = useApi(categoriesApi.list);
+  // Heads can't list associations (and don't need to: theirs is assigned automatically).
+  const associations = useApi(() => (lockedAssociation ? Promise.resolve([]) : associationsApi.list()), [lockedAssociation]);
   const [f, setF] = useState(empty);
-  const [files, setFiles] = useState<string[]>([]);
   const [error, setError] = useState("");
-  const [created, setCreated] = useState<Artisan | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [created, setCreated] = useState<ArtisanDto | null>(null);
 
   const set = (k: keyof typeof empty) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setF((s) => ({ ...s, [k]: e.target.value }));
 
-  const towns = Array.from(new Set(artisans.map((a) => a.town).filter(Boolean)));
-
   const close = () => {
-    setF(empty); setFiles([]); setError(""); setCreated(null);
+    setF(empty); setError(""); setCreated(null);
     onClose();
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (!isValidPhone(f.phone)) return setError("Enter a valid Nigerian phone number (e.g. 08012345678).");
     if (f.whatsapp && !isValidPhone(f.whatsapp)) return setError("Enter a valid WhatsApp number.");
     if (f.idType && !f.idNumber.trim()) return setError("Enter the ID number for the selected ID type.");
-    const input: NewArtisanInput = {
-      ...f,
-      association: lockedAssociation ?? f.association,
-      documentNames: files,
-    };
-    const r = addArtisan(input, session?.name ?? "Staff");
-    if (r.error) return setError(r.error);
-    setCreated(r.artisan!);
+    setSaving(true);
+    try {
+      const artisan = await artisansApi.create({
+        ...f,
+        associationId: lockedAssociation ? undefined : f.associationId,
+      });
+      setCreated(artisan);
+      onCreated?.();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -77,23 +85,15 @@ export default function ArtisanFormModal({ open, onClose, lockedAssociation }: P
       {created ? (
         <div className="space-y-4">
           <Notice tone="success">
-            <strong>{created.name}</strong> was registered under <strong>{created.association}</strong> ({created.id}).
-            The action has been recorded in the audit log.
+            <strong>{created.name}</strong> was registered under <strong>{created.association}</strong> ({created.ref}).
+            An activation email has been sent to <strong>{created.email}</strong> with a secure one-time link to choose a
+            password. The action has been recorded in the audit log.
           </Notice>
-          <div className="rounded-xl border border-forest-100 bg-forest-50/60 p-4 text-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-forest-700/60">Email sent to {created.email}</p>
-            <p className="mt-2 font-semibold text-forest-900">Activate your AAON account</p>
-            <p className="mt-1 text-forest-700/80">
-              Hello {created.name.split(" ")[0]}, your profile has been created. Use the secure one-time link below to
-              choose your password. We never send passwords by email.
-            </p>
-            <Link to={`/activate?artisan=${created.id}`} className="mt-2 inline-block font-medium text-forest-600 hover:underline">
-              Activate account →
-            </Link>
-          </div>
-          <p className="text-xs text-forest-700/60">Demo only: in production the link is delivered by email.</p>
+          <p className="text-xs text-forest-700/60">
+            If they don't receive it, open their profile and use "Resend activation email". We never send passwords by email.
+          </p>
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => { setF(empty); setFiles([]); setCreated(null); }}>Register another</Button>
+            <Button variant="secondary" onClick={() => { setF(empty); setCreated(null); }}>Register another</Button>
             <Button onClick={close}>Done</Button>
           </div>
         </div>
@@ -116,10 +116,7 @@ export default function ArtisanFormModal({ open, onClose, lockedAssociation }: P
             <Input label="Business description" value={f.businessDescription} onChange={set("businessDescription")} />
           </Section>
           <Section title="Location">
-            <Select
-              label="Town / city *" required value={f.town} onChange={set("town")}
-              options={[{ label: "Select town", value: "" }, ...towns.map((t) => ({ label: t, value: t }))]}
-            />
+            <Input label="Town / city *" value={f.town} onChange={set("town")} placeholder="e.g. Abeokuta" required />
             <Input label="Specific location * (area, neighbourhood, street)" value={f.area} onChange={set("area")} required />
           </Section>
           <Section title="Classification">
@@ -127,42 +124,32 @@ export default function ArtisanFormModal({ open, onClose, lockedAssociation }: P
               label="Artisan category *" required value={f.category} onChange={set("category")}
               options={[
                 { label: "Select category", value: "" },
-                ...categories.filter((c) => c.status === "Active").map((c) => ({ label: c.name, value: c.name })),
+                ...(categories.data ?? []).filter((c) => c.status === "Active").map((c) => ({ label: c.name, value: c.name })),
               ]}
             />
             {lockedAssociation ? (
               <Input label="Association (assigned automatically)" value={lockedAssociation} disabled readOnly />
             ) : (
               <Select
-                label="Association *" required value={f.association} onChange={set("association")}
+                label="Association *" required value={f.associationId} onChange={set("associationId")}
                 options={[
                   { label: "Select association", value: "" },
-                  ...associations.filter((a) => a.status === "Active").map((a) => ({ label: a.name, value: a.name })),
+                  ...(associations.data ?? []).filter((a) => a.status === "Active").map((a) => ({ label: a.name, value: a.id })),
                 ]}
               />
             )}
           </Section>
-          <Section title="Identification & documents (private, never shown publicly)">
+          <Section title="Identification (private, never shown publicly)">
             <Select
               label="ID type" value={f.idType} onChange={set("idType")}
-              options={[
-                { label: "Select ID type", value: "" },
-                { label: "National ID (NIN)", value: "National ID (NIN)" },
-                { label: "Voter's card", value: "Voter's card" },
-                { label: "Driver's licence", value: "Driver's licence" },
-                { label: "International passport", value: "International passport" },
-              ]}
+              options={[{ label: "Select ID type", value: "" }, ...ID_TYPES.map((t) => ({ label: t, value: t }))]}
             />
             <Input label="ID number" value={f.idNumber} onChange={set("idNumber")} />
-            <Input
-              label="ID document & certificates (PDF, JPG or PNG)" type="file" accept=".pdf,.jpg,.jpeg,.png" multiple
-              onChange={(e) => setFiles(Array.from(e.target.files ?? []).map((x) => x.name))}
-            />
-            <Input label="Profile photograph" type="file" accept=".jpg,.jpeg,.png" />
           </Section>
+          <p className="text-xs text-forest-700/60">Document and photo uploads aren't available yet; they'll be added with the documents module.</p>
           <div className="flex justify-end gap-2 border-t border-forest-100 pt-4">
             <Button type="button" variant="secondary" onClick={close}>Cancel</Button>
-            <Button type="submit">Create Artisan</Button>
+            <Button type="submit" disabled={saving}>{saving ? "Creating..." : "Create Artisan"}</Button>
           </div>
         </form>
       )}
