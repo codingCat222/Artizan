@@ -7,39 +7,45 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Notice from "../../components/ui/Notice";
 import PageHeader from "../../components/ui/PageHeader";
-import { currentPeriod, daysUntil, isListed, nextPeriod, owesCurrent } from "../../lib/billing";
 import { fmtDate, naira } from "../../lib/format";
-import { useStore } from "../../store/AppStore";
-import { useMe } from "../../store/useMe";
+import { useApi } from "../../lib/useApi";
+import { meApi } from "../../services/me";
+
+const daysUntil = (iso: string) => Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000));
 
 export default function ArtisanDashboardPage() {
-  const me = useMe();
-  const { payments, settings } = useStore();
+  const { data: b, loading, error, reload } = useApi(meApi.billing);
   const [paying, setPaying] = useState(false);
-  const mine = payments.filter((p) => p.artisanId === me.id);
-  const cur = currentPeriod(settings);
-  const next = nextPeriod(settings);
-  const owes = owesCurrent(me, payments, settings);
-  const paidNow = mine.find((p) => p.period === cur.label && p.status === "Paid");
-  const hidden = me.status === "Overdue";
-  const inGrace = owes && !hidden;
-  const dueIn = daysUntil(next.due);
+
+  if (!b)
+    return (
+      <div className="space-y-4">
+        <PageHeader title="Welcome back" subtitle="" />
+        {error ? <Notice tone="error">{error} <button className="ml-2 font-medium underline" onClick={reload}>Retry</button></Notice> : <p className="text-sm text-forest-700/70">{loading ? "Loading..." : ""}</p>}
+      </div>
+    );
+
+  const { profile: me, period: cur, nextPeriod: next } = b;
+  const inGrace = b.owes && !b.hidden && Date.now() > new Date(cur.due).getTime();
+  const pay = (
+    <div className="mt-2"><Button size="sm" onClick={() => setPaying(true)}>Pay {naira(b.fee)} now</Button></div>
+  );
 
   return (
     <div className="space-y-6">
       <PageHeader title={`Welcome back, ${me.name.split(" ")[0]}`} subtitle={`${me.association} · ${me.category}`} />
 
-      {hidden && (
+      {b.hidden && (
         <Notice tone="error">
           <strong>Your listing is hidden from public search.</strong> Your {cur.label} fee wasn't paid before the grace period ended
           ({fmtDate(cur.graceEnd)}). Pay now and your profile will be restored once the payment is verified.
-          <div className="mt-2"><Button size="sm" onClick={() => setPaying(true)}>Pay {naira(settings.fee)} now</Button></div>
+          {pay}
         </Notice>
       )}
       {inGrace && (
         <Notice tone="warn">
           <strong>Your {cur.label} fee is overdue.</strong> Pay by {fmtDate(cur.graceEnd)} to avoid being removed from public search.
-          <div className="mt-2"><Button size="sm" onClick={() => setPaying(true)}>Pay {naira(settings.fee)} now</Button></div>
+          {pay}
         </Notice>
       )}
 
@@ -47,15 +53,15 @@ export default function ArtisanDashboardPage() {
         <Card className="bg-forest-700 text-white">
           <p className="text-sm font-medium text-forest-100/80">Account Status</p>
           <p className="mt-2 text-2xl font-bold">{me.status}</p>
-          <p className="mt-1 text-sm text-forest-100/70">{isListed(me) ? "Listed in public search" : "Not listed in public search"}</p>
+          <p className="mt-1 text-sm text-forest-100/70">{me.listed ? "Listed in public search" : "Not listed in public search"}</p>
         </Card>
         <Card>
           <p className="text-sm font-medium text-forest-700/70">{cur.label} Fee</p>
-          <p className="mt-2 text-2xl font-bold text-forest-900">{naira(settings.fee)}</p>
-          {paidNow ? (
-            <p className="mt-1 text-sm text-fresh-600">Paid on {paidNow.date}</p>
-          ) : owes ? (
-            <p className="mt-1 text-sm text-red-600">Unpaid · was due {fmtDate(cur.due)}</p>
+          <p className="mt-2 text-2xl font-bold text-forest-900">{naira(b.fee)}</p>
+          {b.paidNow ? (
+            <p className="mt-1 text-sm text-fresh-600">Paid on {fmtDate(b.paidNow.date)}</p>
+          ) : b.owes ? (
+            <p className="mt-1 text-sm text-red-600">{Date.now() > new Date(cur.due).getTime() ? `Unpaid · was due ${fmtDate(cur.due)}` : `Due ${fmtDate(cur.due)}`}</p>
           ) : (
             <p className="mt-1 text-sm text-forest-700/60">No payment required yet</p>
           )}
@@ -63,7 +69,7 @@ export default function ArtisanDashboardPage() {
         <Card>
           <p className="text-sm font-medium text-forest-700/70">Next Due Date</p>
           <p className="mt-2 text-2xl font-bold text-forest-900">{fmtDate(next.due)}</p>
-          <p className="mt-1 text-sm text-forest-700/60">{dueIn} days remaining · {next.label}</p>
+          <p className="mt-1 text-sm text-forest-700/60">{daysUntil(next.due)} days remaining · {next.label}</p>
         </Card>
       </div>
 
@@ -74,7 +80,7 @@ export default function ArtisanDashboardPage() {
             <Link to="/artisan/payments" className="text-sm font-medium text-forest-600 hover:underline">View all</Link>
           </div>
           <div className="mt-3 divide-y divide-forest-50">
-            {mine.slice(0, 4).map((p) => (
+            {b.payments.slice(0, 4).map((p) => (
               <div key={p.id} className="flex items-center justify-between py-3 text-sm">
                 <div>
                   <p className="font-medium text-forest-900">{p.period}</p>
@@ -86,22 +92,22 @@ export default function ArtisanDashboardPage() {
                 </div>
               </div>
             ))}
-            {mine.length === 0 && <p className="py-4 text-sm text-forest-700/60">No payments yet.</p>}
+            {b.payments.length === 0 && <p className="py-4 text-sm text-forest-700/60">No payments yet.</p>}
           </div>
         </Card>
 
         <Card>
           <h3 className="flex items-center gap-2 font-semibold text-forest-900"><Bell size={16} /> Notifications</h3>
           <ul className="mt-3 space-y-3 text-sm">
-            {hidden && <li><p className="font-medium text-red-600">Listing hidden</p><p className="text-xs text-forest-700/60">Unpaid after the grace period.</p></li>}
-            {paidNow && <li><p className="font-medium text-forest-900">Payment received</p><p className="text-xs text-forest-700/60">Your {cur.label} fee was confirmed.</p></li>}
+            {b.hidden && <li><p className="font-medium text-red-600">Listing hidden</p><p className="text-xs text-forest-700/60">Unpaid after the grace period.</p></li>}
+            {b.paidNow && <li><p className="font-medium text-forest-900">Payment received</p><p className="text-xs text-forest-700/60">Your {cur.label} fee was confirmed.</p></li>}
             <li><p className="font-medium text-forest-900">Next fee due {fmtDate(next.due)}</p><p className="text-xs text-forest-700/60">Reminders are emailed before the due date.</p></li>
             <li><p className="font-medium text-forest-900">Welcome</p><p className="text-xs text-forest-700/60">Your account was created by {me.createdBy}.</p></li>
           </ul>
         </Card>
       </div>
 
-      <PayModal artisanId={me.id} open={paying} onClose={() => setPaying(false)} />
+      <PayModal open={paying} onClose={() => setPaying(false)} fee={b.fee} periodLabel={cur.label} gatewayMode={b.gatewayMode} />
     </div>
   );
 }
