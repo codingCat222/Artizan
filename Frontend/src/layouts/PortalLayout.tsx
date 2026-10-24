@@ -46,8 +46,8 @@ export default function PortalLayout({ nav, allow }: { nav: NavItem[]; allow: Ex
     <div className="flex items-center gap-3 border-b border-forest-100 px-6 py-5">
       <Logo className="h-12 w-auto" />
       <div>
-        <p className="text-sm font-bold leading-tight text-forest-900">AAON Ogun State</p>
-        <p className="text-xs text-forest-700/60">Chapter Portal</p>
+        <p className="text-sm font-bold leading-tight text-forest-900">Artisans Association of Ogun</p>
+        <p className="text-xs text-forest-700/60">Member Portal</p>
       </div>
     </div>
   );

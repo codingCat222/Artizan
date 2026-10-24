@@ -168,17 +168,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         setAssociations((l) => [
           ...l,
           {
-            id: uid("assoc"),
-            name: a.name,
-            code: a.code ?? "",
-            category: a.category ?? "",
-            head: "",
-            members: 0,
-            status: "Active",
-            town: a.town ?? "",
-            contactEmail: a.contactEmail ?? "",
-            contactPhone: a.contactPhone,
-            description: a.description,
+            id: uid("assoc"), name: a.name, code: a.code ?? "", category: a.category ?? "", head: "", members: 0, status: "Active",
+            town: a.town ?? "", contactEmail: a.contactEmail ?? "", contactPhone: a.contactPhone, description: a.description,
           },
         ]);
         log(actor, "Created association", a.name);

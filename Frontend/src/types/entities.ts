@@ -69,10 +69,11 @@ export interface Association {
   head: string;
   members: number;
   status: "Active" | "Inactive";
-  town?: string;
   contactEmail: string;
   contactPhone?: string;
   description?: string;
+  /** Only used by the sample-data layer; the real association record has no town. */
+  town?: string;
 }
 
 export interface Category {

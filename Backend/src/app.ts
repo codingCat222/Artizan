@@ -13,6 +13,7 @@ import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import meRoutes from "./modules/me/me.routes";
 import { paystackWebhook } from "./modules/payments/webhook.controller";
 import paymentRoutes from "./modules/payments/payments.routes";
+import publicRoutes from "./modules/public/public.routes";
 import reportRoutes from "./modules/reports/reports.routes";
 import settingsRoutes from "./modules/settings/settings.routes";
 import staffRoutes from "./modules/staff/staff.routes";
@@ -49,6 +50,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/billing", billingRoutes);
 app.use("/api/me", meRoutes);
+app.use("/api/public", publicRoutes);
 app.use("/api/associations", associationRoutes);
 
 // Other modules (artisans, associations, payments, etc.) get mounted here

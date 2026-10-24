@@ -1,16 +1,19 @@
-import { ArrowRight, Briefcase, CheckCircle2, ChevronDown, Handshake, Hammer, Mail, Phone, Search, Users } from "lucide-react";
+import { ArrowRight, Briefcase, CheckCircle2, ChevronDown, Hammer, Mail, Phone, Search, Users } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import AboutFounder from "../../components/home/AboutFounder";
+import Gallery from "../../components/home/Gallery";
+import Leadership from "../../components/home/Leadership";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
-import { isListed } from "../../lib/billing";
-import { useStore } from "../../store/AppStore";
+import { useApi } from "../../lib/useApi";
+import { publicApi } from "../../services/public";
 
 const faqs = [
-  ["Who does the chapter represent?", "Artisans, tradespeople, informal-sector workers and MSME operators across Ogun State, including plumbing, tailoring, motor mechanics, carpentry and other skilled trades."],
-  ["What does the chapter do?", "It brings artisans together, strengthens cooperation among trade groups, and provides a collective platform for engagement with government, institutions and development partners."],
-  ["Who leads the Ogun State Chapter?", "The chapter is led by State President Comrade Anthony Ayodele, working with association officers and local chapter representatives to advance the interests of artisans."],
+  ["Who does the Association represent?", "Artisans, tradespeople, informal-sector workers and MSME operators across Ogun State, including plumbing, tailoring, motor mechanics, carpentry and other skilled trades."],
+  ["What does the Association do?", "It brings artisans together, strengthens cooperation among trade groups, and provides a collective platform for engagement with government, institutions and development partners."],
+  ["Who leads the Association?", "The Association is led by its President, Comrade Anthony Ayodele, working with the State Executives Council, the Divisional Coordinators and the Local Government chairmen to advance the interests of artisans."],
   ["How do I appear in the Find Artisan directory?", "Artisans are registered by their association after verification. Once registered and up to date with the monthly facilitation fee, your profile appears in public search."],
 ];
 
@@ -23,11 +26,11 @@ function Eyebrow({ children, light }: { children: React.ReactNode; light?: boole
 }
 
 export default function HomePage() {
-  const { artisans, categories } = useStore();
   const navigate = useNavigate();
-  const towns = Array.from(new Set(artisans.map((a) => a.town).filter(Boolean)));
-  const activeCats = categories.filter((c) => c.status === "Active");
-  const listed = artisans.filter(isListed);
+  const { data: filters } = useApi(publicApi.filters);
+  const categories = filters?.categories ?? [];
+  const towns = filters?.towns ?? [];
+  const listedCount = filters?.listedCount;
   const [category, setCategory] = useState("");
   const [town, setTown] = useState("");
   const [area, setArea] = useState("");
@@ -50,17 +53,15 @@ export default function HomePage() {
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-forest-900/95 via-forest-800/85 to-forest-800/60" />
         <div className="mx-auto max-w-7xl px-6 pb-16 pt-16 sm:pt-24">
           <div className="max-w-3xl">
-            <Eyebrow light>Artisans… For Better Life!!! No Artisan… No Nation</Eyebrow>
-            <h1 className="mt-5 text-4xl font-bold leading-tight sm:text-6xl">Empowering Artisans. Strengthening Ogun State.</h1>
-            <p className="mt-5 max-w-2xl text-lg text-forest-100/85">
-              Welcome to the Artisans Association of Nigeria (AAON), Ogun State Chapter — an umbrella body representing artisans, tradespeople
-              and informal-sector workers across the state.
+            <h1 className="text-4xl font-bold leading-tight sm:text-6xl">Artisans Association of Ogun</h1>
+            <p className="mt-5 max-w-2xl text-xl text-forest-100/90 sm:text-2xl">
+              The unified organization for Artisans, Technicians and craftsmen in Ogun State.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/contact" className="inline-flex items-center gap-2 rounded-xl bg-mint px-6 py-3 text-sm font-semibold text-forest-800 hover:bg-forest-300">
-                Contact the Chapter <ArrowRight size={16} />
+                Contact Us <ArrowRight size={16} />
               </Link>
-              <Link to="/about" className="rounded-xl border border-white/40 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10">About the Chapter</Link>
+              <Link to="/about" className="rounded-xl border border-white/40 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10">About the Association</Link>
             </div>
           </div>
 
@@ -69,7 +70,7 @@ export default function HomePage() {
             <p className="text-sm text-forest-700/60">Search by trade and location. No account needed.</p>
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto]">
               <Select label="Artisan category" value={category} onChange={(e) => setCategory(e.target.value)}
-                options={[{ label: "Any trade", value: "" }, ...activeCats.map((c) => ({ label: c.name, value: c.name }))]} />
+                options={[{ label: "Any trade", value: "" }, ...categories.map((c) => ({ label: c, value: c }))]} />
               <Select label="Town / city" value={town} onChange={(e) => setTown(e.target.value)}
                 options={[{ label: "Any town", value: "" }, ...towns.map((t) => ({ label: t, value: t }))]} />
               <Input label="Specific location" value={area} onChange={(e) => setArea(e.target.value)} placeholder="Area, neighbourhood or street" />
@@ -97,46 +98,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* MISSION */}
-      <section className="bg-white py-20">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-2">
-          <div className="relative">
-            <img src="/artisans/img5.png" alt="Artisan at work" className="h-96 w-[78%] rounded-2xl object-cover" />
-            <img src="/aaon/assembly-square.jpg" alt="Chapter assembly" className="absolute -bottom-8 right-0 h-56 w-[52%] rounded-2xl border-8 border-white object-cover shadow-card" />
-            <div className="absolute left-4 top-4 rounded-2xl bg-forest-800 px-5 py-3 text-white">
-              <p className="text-3xl font-bold">20</p>
-              <p className="text-xs text-mint">Local Government Areas</p>
-            </div>
-          </div>
-          <div>
-            <Eyebrow>Our Mission in Action</Eyebrow>
-            <h2 className="mt-4 text-3xl font-bold text-forest-800 sm:text-4xl">A Collective Platform for Artisans Across Ogun State</h2>
-            <p className="mt-4 text-forest-700/80">
-              AAON Ogun State brings artisans together, strengthens cooperation among trade groups, and provides a collective platform through
-              which members can engage with government, institutions and partners.
-            </p>
-            <div className="mt-6 flex gap-4 rounded-2xl bg-forest-50 p-5">
-              <Handshake className="mt-1 shrink-0 text-forest-500" />
-              <div>
-                <h3 className="font-semibold text-forest-800">Practical Support</h3>
-                <p className="text-sm text-forest-700/80">We advocate for practical support, improved access to skills development, and opportunities that help artisans build sustainable livelihoods.</p>
-              </div>
-            </div>
-            <ul className="mt-5 space-y-2 text-forest-700/90">
-              {["Unity across trades, so artisans and trade groups can organise and be heard.", "Professional service that strengthens trust with customers and communities."].map((t) => (
-                <li key={t} className="flex gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-forest-500" />{t}</li>
-              ))}
-            </ul>
-            <div className="mt-7 flex flex-wrap items-center gap-6">
-              <Link to="/about" className="inline-flex items-center gap-2 rounded-xl bg-forest-800 px-6 py-3 text-sm font-semibold text-white hover:bg-forest-500">More About Us <ArrowRight size={16} /></Link>
-              <div className="flex items-center gap-3">
-                <img src="/aaon/officers-square.jpg" alt="" className="h-12 w-12 rounded-full object-cover" />
-                <div><p className="text-sm font-semibold text-forest-800">Comrade Anthony Ayodele</p><p className="text-xs text-forest-700/60">State President</p></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* ABOUT THE ASSOCIATION + FOUNDER */}
+      <AboutFounder />
+
+      {/* LEADERSHIP & STRUCTURE */}
+      <Leadership />
 
       {/* FIND ARTISAN HUB */}
       <section className="bg-forest-800 py-16 text-white">
@@ -146,11 +112,11 @@ export default function HomePage() {
             <h2 className="mt-4 text-3xl font-bold sm:text-4xl">Find a Skilled Artisan Near You</h2>
             <p className="mt-3 text-forest-100/80">
               Need a plumber, tailor, motor mechanic, carpenter or another tradesperson in Ogun State? Search by trade and location and contact
-              verified chapter members directly.
+              verified Association members directly.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-6">
-            <div><p className="text-4xl font-bold text-mint">{listed.length}</p><p className="text-sm text-forest-100/70">listed artisans</p></div>
+            <div><p className="text-4xl font-bold text-mint">{listedCount ?? "—"}</p><p className="text-sm text-forest-100/70">listed artisans</p></div>
             <Link to="/search-results" className="rounded-xl bg-mint px-6 py-3 text-sm font-semibold text-forest-800 hover:bg-forest-300">Find Artisan Now</Link>
           </div>
         </div>
@@ -161,8 +127,8 @@ export default function HomePage() {
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-2">
           <div className="order-2 lg:order-1">
             <Eyebrow>Our Priorities</Eyebrow>
-            <h2 className="mt-4 text-3xl font-bold text-forest-800 sm:text-4xl">What the Chapter Works to Advance</h2>
-            <p className="mt-4 text-forest-700/80">The chapter promotes the interests, dignity, skills and economic opportunities of artisans, and supports the growth of communities across Ogun State.</p>
+            <h2 className="mt-4 text-3xl font-bold text-forest-800 sm:text-4xl">What the Association Works to Advance</h2>
+            <p className="mt-4 text-forest-700/80">The Association promotes the interests, dignity, skills and economic opportunities of artisans, and supports the growth of communities across Ogun State.</p>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               {[["Representation", "Representing artisans' interests and concerns through a shared platform."], ["Skills Development", "Encouraging professionalism and quality workmanship in every trade."]].map(([t, d]) => (
                 <div key={t} className="rounded-2xl border border-forest-100 bg-forest-50 p-5">
@@ -195,7 +161,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-6">
           <div className="max-w-2xl">
             <Eyebrow>Our Values</Eyebrow>
-            <h2 className="mt-4 text-3xl font-bold text-forest-800 sm:text-4xl">How the Chapter Serves Artisans and the State</h2>
+            <h2 className="mt-4 text-3xl font-bold text-forest-800 sm:text-4xl">How the Association Serves Artisans and the State</h2>
             <p className="mt-4 text-forest-700/80">Artisans are an important source of employment and practical expertise, contributing to households, businesses and the wider Ogun State economy.</p>
           </div>
           <div className="mt-10 grid gap-5 md:grid-cols-3">
@@ -212,31 +178,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* LEADERSHIP */}
-      <section className="bg-white py-20">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="mx-auto max-w-2xl text-center">
-            <Eyebrow>Leadership</Eyebrow>
-            <h2 className="mt-4 text-3xl font-bold text-forest-800 sm:text-4xl">Led for Artisans Across Ogun State</h2>
-          </div>
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {[["leadership", "Comrade Anthony Ayodele", "State President"], ["officers", "Association Officers", "Chapter Leadership"], ["members", "Local Chapter Representatives", "Community Coordination"]].map(([img, n, r]) => (
-              <Link to="/about" key={n} className="group overflow-hidden rounded-2xl border border-forest-100 bg-white shadow-card">
-                <img src={`/aaon/${img}.jpg`} alt={n} className="h-72 w-full object-cover object-top transition-transform duration-500 group-hover:scale-105" />
-                <div className="p-5"><p className="font-semibold text-forest-800">{n}</p><p className="text-sm text-forest-700/60">{r}</p></div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* GALLERY */}
+      <Gallery />
 
       {/* FAQ + CONTACT */}
       <section className="bg-forest-50 py-20">
         <div className="mx-auto grid max-w-7xl gap-12 px-6 lg:grid-cols-2">
           <div className="relative overflow-hidden rounded-2xl">
-            <img src="/Images/Img4.jpeg" alt="" className="h-full min-h-[420px] w-full object-cover" />
+            <img src="/aaon/community-portrait.jpg" alt="" className="h-full min-h-[420px] w-full object-cover" />
             <div className="absolute inset-x-4 bottom-4 rounded-2xl bg-white/95 p-5 shadow-card backdrop-blur">
-              <h3 className="font-bold text-forest-800">Need to Reach the Chapter?</h3>
+              <h3 className="font-bold text-forest-800">Need to Reach the Association?</h3>
               <p className="mt-1 text-sm text-forest-700/80">Enquire about membership, connect a trade group, raise an issue, or discuss a partnership.</p>
               <div className="mt-3 flex flex-wrap gap-4 text-sm text-forest-700/80">
                 <span className="flex items-center gap-2"><Phone size={15} className="text-forest-500" /> Number to be confirmed</span>
@@ -246,7 +197,7 @@ export default function HomePage() {
           </div>
           <div>
             <Eyebrow>Questions</Eyebrow>
-            <h2 className="mt-4 text-3xl font-bold text-forest-800 sm:text-4xl">About the Ogun State Chapter</h2>
+            <h2 className="mt-4 text-3xl font-bold text-forest-800 sm:text-4xl">About the Association</h2>
             <div className="mt-6 space-y-3">
               {faqs.map(([q, a], i) => (
                 <div key={q} className="rounded-2xl border border-forest-100 bg-white">

@@ -14,7 +14,7 @@ import { useMe } from "../../store/useMe";
 export default function MyProfilePage() {
   const me = useMe();
   const { artisans, associations, updateArtisan } = useStore();
-  const towns = Array.from(new Set(associations.map((a) => a.category).filter(Boolean)));
+  const towns = Array.from(new Set(associations.map((a) => a.town).filter((t): t is string => !!t)));
   const fileRef = useRef<HTMLInputElement>(null);
   const [f, setF] = useState({
     phone: me.phone, whatsapp: me.whatsapp ?? "", email: me.email, businessAddress: me.businessAddress ?? "",

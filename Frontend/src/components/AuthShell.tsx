@@ -10,7 +10,7 @@ export default function AuthShell({ title, subtitle, children }: { title: string
           <Logo className="h-14 w-auto" />
           <div>
             <p className="font-bold text-forest-900">{title}</p>
-            <p className="text-xs text-forest-700/60">{subtitle ?? "AAON Ogun State Chapter"}</p>
+            <p className="text-xs text-forest-700/60">{subtitle ?? "Artisans Association of Ogun"}</p>
           </div>
         </Link>
         <div className="mt-6">{children}</div>

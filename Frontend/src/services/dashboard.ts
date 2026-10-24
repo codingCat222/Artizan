@@ -10,6 +10,16 @@ export interface PlatformSummary {
     recent: { id: string; ref: string; name: string; category: string; association: string; status: string; createdAt: string }[];
 }
 
+export interface AssociationSummary {
+    association: string;
+    fee: number;
+    artisans: { total: number; active: number; inactive: number; overdue: number; pending: number; listed: number };
+    outstanding: { count: number; items: { id: string; name: string; status: string }[] };
+    revenue: { period: string; collected: number; collectedAll: number };
+    recent: { id: string; ref: string; name: string; category: string; status: string; createdAt: string }[];
+}
+
 export const dashboardApi = {
     summary: () => api<PlatformSummary>("/dashboard"),
+    association: () => api<AssociationSummary>("/dashboard/association"),
 };

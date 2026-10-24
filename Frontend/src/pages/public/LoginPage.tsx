@@ -29,7 +29,7 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthShell title="Login" subtitle="Ogun State Chapter">
+    <AuthShell title="Login" subtitle="Artisans Association of Ogun">
       <form onSubmit={submit} className="space-y-4">
         {notice && <Notice tone="success">{notice}</Notice>}
         {error && <Notice tone="error">{error}</Notice>}

@@ -8,6 +8,7 @@ import { useEffect } from "react";
 const links = [
   { label: "Home", to: "/" },
   { label: "About Us", to: "/about" },
+  { label: "Leadership", to: "/#leadership" },
   { label: "Find Artisan", to: "/search-results" },
   { label: "Contact Us", to: "/contact" },
 ];
@@ -15,15 +16,22 @@ const links = [
 export default function PublicLayout() {
   const [open, setOpen] = useState(false);
   const { session } = useAuth();
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const loginTo = session ? homeFor(session.role) : "/login";
   const loginLabel = session ? "My Dashboard" : "Login";
 
-  useEffect(() => { window.scrollTo(0, 0); setOpen(false); }, [pathname]);
+  useEffect(() => {
+    setOpen(false);
+    if (hash) {
+      // Wait a tick so the page has rendered before looking for the section.
+      const t = setTimeout(() => document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: "smooth" }), 50);
+      return () => clearTimeout(t);
+    }
+    window.scrollTo(0, 0);
+  }, [pathname, hash]);
 
   const navCls = ({ isActive }: { isActive: boolean }) =>
-    `rounded-lg px-3.5 py-2 text-[15px] font-medium transition-colors ${
-      isActive ? "text-forest-500" : "text-forest-800 hover:text-forest-500"
+    `rounded-lg px-3.5 py-2 text-[15px] font-medium transition-colors ${isActive ? "text-forest-500" : "text-forest-800 hover:text-forest-500"
     }`;
 
   return (
@@ -33,15 +41,19 @@ export default function PublicLayout() {
           <Link to="/" className="flex items-center gap-3">
             <Logo className="h-14 w-auto" />
             <div className="hidden leading-tight sm:block">
-              <p className="text-base font-bold text-forest-800">AAON Ogun State</p>
+              <p className="text-base font-bold text-forest-800">Artisans Association of Ogun</p>
               <p className="text-xs text-forest-600/70">Artisans… For Better Life</p>
             </div>
           </Link>
 
           <nav className="hidden items-center gap-1 lg:flex">
-            {links.map((l) => (
-              <NavLink key={l.to} to={l.to} end={l.to === "/"} className={navCls}>{l.label}</NavLink>
-            ))}
+            {links.map((l) =>
+              l.to.includes("#") ? (
+                <Link key={l.to} to={l.to} className="rounded-lg px-3.5 py-2 text-[15px] font-medium text-forest-800 transition-colors hover:text-forest-500">{l.label}</Link>
+              ) : (
+                <NavLink key={l.to} to={l.to} end={l.to === "/"} className={navCls}>{l.label}</NavLink>
+              ),
+            )}
           </nav>
 
           <div className="flex items-center gap-2">
@@ -58,12 +70,16 @@ export default function PublicLayout() {
         </div>
         {open && (
           <div className="border-t border-forest-100 bg-white px-5 py-3 lg:hidden">
-            {links.map((l) => (
-              <NavLink key={l.to} to={l.to} end={l.to === "/"} onClick={() => setOpen(false)}
-                className={({ isActive }) => `block rounded-lg px-3 py-2.5 text-sm font-medium ${isActive ? "bg-forest-50 text-forest-500" : "text-forest-800"}`}>
-                {l.label}
-              </NavLink>
-            ))}
+            {links.map((l) =>
+              l.to.includes("#") ? (
+                <Link key={l.to} to={l.to} onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2.5 text-sm font-medium text-forest-800">{l.label}</Link>
+              ) : (
+                <NavLink key={l.to} to={l.to} end={l.to === "/"} onClick={() => setOpen(false)}
+                  className={({ isActive }) => `block rounded-lg px-3 py-2.5 text-sm font-medium ${isActive ? "bg-forest-50 text-forest-500" : "text-forest-800"}`}>
+                  {l.label}
+                </NavLink>
+              ),
+            )}
           </div>
         )}
       </header>
@@ -76,7 +92,7 @@ export default function PublicLayout() {
         <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <div className="inline-flex rounded-full bg-white p-1.5"><Logo className="h-20 w-20" /></div>
-            <p className="mt-4 text-sm leading-relaxed">Representing artisans. Promoting skills. Supporting enterprise across Ogun State.</p>
+            <p className="mt-4 text-sm leading-relaxed">The unified organization for Artisans, Technicians and craftsmen in Ogun State.</p>
             <p className="mt-4 text-xs uppercase tracking-wide text-forest-300">State President</p>
             <p className="text-sm font-semibold text-white">Comrade Anthony Ayodele</p>
           </div>
@@ -96,13 +112,13 @@ export default function PublicLayout() {
           <div>
             <p className="text-sm font-semibold text-white">Contact Information</p>
             <p className="mt-4 text-sm leading-relaxed">
-              Artisans Association of Nigeria (AAON), Ogun State Chapter. Official office address, phone number and email are to be confirmed.
+              Artisans Association of Ogun. Official office address, phone number and email are to be confirmed.
             </p>
             <Link to="/contact" className="mt-4 inline-block rounded-xl bg-mint px-4 py-2 text-sm font-semibold text-forest-800 hover:bg-forest-300">Contact Us</Link>
           </div>
         </div>
         <div className="border-t border-white/10 px-6 py-5 text-center text-xs text-forest-100/60">
-          Artisans… For Better Life!!! · © 2026 AAON Ogun State Chapter. All rights reserved.
+          Artisans… For Better Life!!! · © 2026 Artisans Association of Ogun. All rights reserved.
         </div>
       </footer>
     </div>
